@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reclaim Verification</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Reclaim Protocol Verification</h1>
+    
+    <div class="controls">
+      <label for="provider">Select Provider:</label>
+      <select id="provider">
+        <option value="amazon">Amazon</option>
+        <option value="uber">Uber</option>
+        <option value="netflix">Netflix</option>
+      </select>
+      
+      <button id="startBtn">Start Verification</button>
+    </div>
+    
+    <div id="status" class="status"></div>
+    
+    <div id="qrArea" class="qr-area">
+      <!-- QR code or verification link will appear here -->
+    </div>
+  </div>
+  
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
