@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node server.js",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@reclaimprotocol/js-sdk": "^2.0.0"
+    "@reclaimprotocol/js-sdk": "^4.11.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "vite": "^5.0.0"

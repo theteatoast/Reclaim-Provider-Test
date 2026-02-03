@@ -4,11 +4,11 @@ import { ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
 const PROVIDERS = {
     amazon: {
         name: 'Amazon',
-        id: '1d270ba2-8680-415b-b7e2-2cebd47f6f02'
+        id: '7fe734fc-e444-4bd4-8022-aa123a5c9bcd'
     },
     uber: {
         name: 'Uber',
-        id: 'a9562ec7-d8e7-4a6b-ab08-89552f2e423b'
+        id: '76afcf07-4c8f-4a63-b545-0d4c4f955164'
     },
     netflix: {
         name: 'Netflix',
@@ -19,6 +19,7 @@ const PROVIDERS = {
 // Environment variables
 const APP_ID = import.meta.env.VITE_RECLAIM_APP_ID;
 const APP_SECRET = import.meta.env.VITE_RECLAIM_APP_SECRET;
+const CALLBACK_URL = import.meta.env.VITE_CALLBACK_URL; // Your backend endpoint to receive proof
 
 // DOM elements
 const providerSelect = document.getElementById('provider');
@@ -87,6 +88,12 @@ async function startVerification() {
             APP_SECRET,
             provider.id
         );
+
+        // Set callback URL - proof will be POSTed to this URL after verification
+        if (CALLBACK_URL) {
+            reclaimProofRequest.setAppCallbackUrl(CALLBACK_URL, true); // true = send as JSON
+            console.log('Callback URL set:', CALLBACK_URL);
+        }
 
         // Generate request URL
         const requestUrl = await reclaimProofRequest.getRequestUrl();
