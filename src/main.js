@@ -1,24 +1,31 @@
 import { ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
 
-// Provider configuration
-const PROVIDERS = {
-    amazon: {
-        name: 'Amazon',
-        id: '7fe734fc-e444-4bd4-8022-aa123a5c9bcd'
-    },
-    uber: {
-        name: 'Uber',
-        id: '76afcf07-4c8f-4a63-b545-0d4c4f955164'
-    },
-    netflix: {
-        name: 'Netflix',
-        id: 'b3bd406a-cec0-4c91-8c8b-eeb06292cf8e'
-    }
-};
-
 // Environment variables
 const APP_ID = import.meta.env.VITE_RECLAIM_APP_ID;
 const APP_SECRET = import.meta.env.VITE_RECLAIM_APP_SECRET;
+const PROVIDERS_ENV = import.meta.env.VITE_RECLAIM_PROVIDER_IDS;
+
+// Default Provider configuration (Fallback)
+const KNOWN_PROVIDERS = {
+    '1d270ba2-8680-415b-b7e2-2cebd47f6f02': 'Amazon',
+    '76afcf07-4c8f-4a63-b545-0d4c4f955164': 'Uber',
+    'b3bd406a-cec0-4c91-8c8b-eeb06292cf8e': 'Netflix'
+};
+
+// Compute Dynamic Providers
+let providersList = [];
+if (PROVIDERS_ENV) {
+    providersList = PROVIDERS_ENV.split(',').map(id => {
+        id = id.trim();
+        return {
+            id,
+            name: KNOWN_PROVIDERS[id] || `Provider (${id.substring(0, 5)}...)`
+        };
+    });
+} else {
+    providersList = Object.entries(KNOWN_PROVIDERS).map(([id, name]) => ({ id, name }));
+}
+
 const CALLBACK_URL = import.meta.env.VITE_CALLBACK_URL; // Your backend endpoint to receive proof
 
 // DOM elements
@@ -26,6 +33,18 @@ const providerSelect = document.getElementById('provider');
 const startBtn = document.getElementById('startBtn');
 const statusDiv = document.getElementById('status');
 const qrArea = document.getElementById('qrArea');
+
+// Populate select options
+function populateProviders() {
+    providerSelect.innerHTML = '';
+    providersList.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        providerSelect.appendChild(opt);
+    });
+}
+populateProviders();
 
 // Set status message
 function setStatus(message, type = 'info') {
@@ -69,8 +88,8 @@ function handleProofResponse(proofs, providerName) {
 
 // Start verification
 async function startVerification() {
-    const selectedProvider = providerSelect.value;
-    const provider = PROVIDERS[selectedProvider];
+    const selectedProviderId = providerSelect.value;
+    const provider = providersList.find(p => p.id === selectedProviderId);
 
     if (!APP_ID || !APP_SECRET) {
         setStatus('Error: Missing VITE_RECLAIM_APP_ID or VITE_RECLAIM_APP_SECRET', 'error');
