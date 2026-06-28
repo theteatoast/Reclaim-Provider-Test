@@ -14,12 +14,29 @@ const PORT = 3000;
 
 const APP_ID = process.env.RECLAIM_APP_ID;
 const APP_SECRET = process.env.RECLAIM_APP_SECRET;
-const PROVIDER_ID = process.env.RECLAIM_PROVIDER_ID;
 
-if (!APP_ID || !APP_SECRET || !PROVIDER_ID) {
-    console.error('Missing required environment variables: RECLAIM_APP_ID, RECLAIM_APP_SECRET, RECLAIM_PROVIDER_ID');
+if (!APP_ID || !APP_SECRET) {
+    console.error('Missing required environment variables: RECLAIM_APP_ID, RECLAIM_APP_SECRET');
     process.exit(1);
 }
+
+function parseProviders() {
+    const raw = process.env.RECLAIM_PROVIDER_IDS || process.env.RECLAIM_PROVIDER_ID;
+    if (!raw) {
+        console.error('Missing RECLAIM_PROVIDER_IDS or RECLAIM_PROVIDER_ID');
+        process.exit(1);
+    }
+    return raw.split(',').map(entry => {
+        const colon = entry.indexOf(':');
+        if (colon > 0) {
+            return { id: entry.slice(0, colon).trim(), name: entry.slice(colon + 1).trim() };
+        }
+        return { id: entry.trim(), name: entry.trim() };
+    });
+}
+
+const providers = parseProviders();
+console.log('Configured providers:', providers.map(p => `${p.name} (${p.id})`).join(', '));
 
 app.use(cors());
 app.use(express.json());
@@ -30,15 +47,23 @@ if (!fs.existsSync(PROOFS_FILE)) {
     fs.writeFileSync(PROOFS_FILE, '[]');
 }
 
+app.get('/api/providers', (req, res) => {
+    res.json(providers);
+});
+
 app.get('/api/config', async (req, res) => {
     try {
-        const reclaimProofRequest = await ReclaimProofRequest.init(APP_ID, APP_SECRET, PROVIDER_ID, { log: true });
+        const providerId = req.query.providerId || providers[0]?.id;
+        if (!providerId) {
+            return res.status(400).json({ error: 'No provider configured' });
+        }
+        const reclaimProofRequest = await ReclaimProofRequest.init(APP_ID, APP_SECRET, providerId, { log: true });
         const callbackUrl = process.env.RECLAIM_CALLBACK_URL;
         if (callbackUrl) {
             reclaimProofRequest.setAppCallbackUrl(callbackUrl, true);
         }
         const configJson = reclaimProofRequest.toJsonString();
-        res.json({ configJson });
+        res.json({ configJson, providerId });
     } catch (error) {
         console.error('Error generating config:', error);
         res.status(500).json({ error: error.message });

@@ -1,51 +1,65 @@
-# Reclaim Verification App - Setup Instructions
+# Reclaim Protocol Verification App
+
+Use [Reclaim Protocol](https://reclaimprotocol.org) to verify user data from any provider. Sessions are created server-side via the official JS SDK.
 
 ## Quick Start
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+cp .env.example .env
+# edit .env with your credentials
+npm start
+# open http://localhost:3000
+```
 
-2. **Configure environment variables:**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and add your Reclaim credentials:
-   ```
-   VITE_RECLAIM_APP_ID=your_app_id_here
-   VITE_RECLAIM_APP_SECRET=your_app_secret_here
-   ```
+## Environment Variables
 
-3. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
+| Variable | Required | Description |
+|---|---|---|
+| `RECLAIM_APP_ID` | Yes | Your Reclaim application ID |
+| `RECLAIM_APP_SECRET` | Yes | Your Reclaim application secret |
+| `RECLAIM_PROVIDER_IDS` | Yes | Comma-separated provider IDs |
+| `RECLAIM_CALLBACK_URL` | No | Public callback URL (ngrok) for receiving proofs via HTTP POST |
 
-4. **Open in browser:**
-   Navigate to `http://localhost:5173`
+### Provider ID Format
 
-## Usage
+```
+RECLAIM_PROVIDER_IDS=provider-id-1:Display Name,provider-id-2:Another Name
+```
 
-1. Select a provider from the dropdown (Amazon, Uber, or Netflix)
-2. Click "Start Verification"
-3. Scan the QR code with the Reclaim app or click the verification link
-4. Complete the verification in the Reclaim app
-5. The raw JSON proof will be:
-   - Logged to the browser console
-   - Downloaded as a `.json` file named `{provider}_{timestamp}.json`
+Each entry is `ID:Name` — the name appears in the dropdown. If you omit `:Name`, the ID is shown.
 
-## Provider IDs
+Example:
+```
+RECLAIM_PROVIDER_IDS=6d3f6753-7ee6-49ee-a545-62f1b1822ae5:GitHub,76afcf07-4c8f-4a63-b545-0d4c4f955164:Github Profile
+```
 
-| Provider | ID |
-|----------|-----|
-| Amazon | `1d270ba2-8680-415b-b7e2-2cebd47f6f02` |
-| Uber | `2c597463-6a21-4f93-8e39-eae46135d2ce` |
-| Netflix | `b3bd406a-cec0-4c91-8c8b-eeb06292cf8e` |
+### Callback URL (Optional)
 
-## Requirements
+For production or when providers require a public callback:
+```bash
+ngrok http 3000
+# set the ngrok URL in .env
+RECLAIM_CALLBACK_URL=https://your-url.ngrok-free.dev/api/callback
+```
 
-- Node.js 18+
-- Reclaim app on mobile device for verification
-- Valid Reclaim App ID and Secret from [Reclaim Developer Portal](https://dev.reclaimprotocol.org)
+When set, proofs are POSTed to `/api/callback` and stored in `proofs.json`. Without it, proofs are received via the SDK's built-in polling.
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/providers` | GET | List configured providers |
+| `/api/config?providerId=` | GET | Generate verification session config for a provider |
+| `/api/callback` | POST | Receive proofs from Reclaim (when callback URL is set) |
+| `/api/proofs` | GET | List all received proofs |
+
+## Adding Providers
+
+Add provider IDs to `RECLAIM_PROVIDER_IDS` in `.env`. Find provider IDs at [dev.reclaimprotocol.org/explore](https://dev.reclaimprotocol.org/explore).
+
+Providers must be **public** and **approved** to work in web portal mode.
+
+## Source Reference
+
+Built following the official [reclaim-demo-website-v3](https://github.com/reclaimprotocol/reclaim-demo-website-v3).

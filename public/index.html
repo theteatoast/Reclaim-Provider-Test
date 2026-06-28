@@ -9,6 +9,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; padding: 2rem; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: #333; text-align: center; }
+        select { width: 100%; padding: 0.75rem; font-size: 1rem; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 1rem; background: white; }
         button { padding: 0.75rem 1.5rem; font-size: 1rem; background: #4a90d9; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
         button:hover { background: #3a7bc8; }
         button:disabled { background: #ccc; cursor: not-allowed; }
@@ -24,6 +25,7 @@
 <body>
     <div class="container">
         <h1>Reclaim Protocol Verification</h1>
+        <select id="providerSelect"></select>
         <button id="startBtn">Start Verification</button>
         <div id="status" class="status"></div>
         <div id="proofArea" class="proof-area">
@@ -35,6 +37,7 @@
     <script type="module">
         import { ReclaimProofRequest } from 'https://esm.sh/@reclaimprotocol/js-sdk@5.4.0';
 
+        const providerSelect = document.getElementById('providerSelect');
         const startBtn = document.getElementById('startBtn');
         const statusDiv = document.getElementById('status');
         const proofArea = document.getElementById('proofArea');
@@ -53,27 +56,48 @@
             proofData.textContent = JSON.stringify(data, null, 2);
         }
 
-        // Restore stored proof on page load
+        // restore stored proof on page load
         (function restore() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 try {
-                    const proofs = JSON.parse(stored);
-                    showProof(proofs);
+                    showProof(JSON.parse(stored));
                     setStatus('Verification successful!', 'success');
                     startBtn.disabled = false;
                 } catch {}
             }
         })();
 
+        // load provider list
+        async function loadProviders() {
+            try {
+                const res = await fetch('/api/providers');
+                const providers = await res.json();
+                providerSelect.innerHTML = providers.map((p, i) =>
+                    `<option value="${p.id}" ${i === 0 ? 'selected' : ''}>${p.name}</option>`
+                ).join('');
+                if (!providers.length) {
+                    providerSelect.innerHTML = '<option>No providers configured</option>';
+                    startBtn.disabled = true;
+                }
+            } catch {
+                providerSelect.innerHTML = '<option>Failed to load providers</option>';
+                startBtn.disabled = true;
+            }
+        }
+        loadProviders();
+
         startBtn.addEventListener('click', async () => {
             try {
+                const providerId = providerSelect.value;
+                if (!providerId) return;
+
                 startBtn.disabled = true;
                 proofArea.style.display = 'none';
                 localStorage.removeItem(STORAGE_KEY);
                 setStatus('Initializing...', 'info');
 
-                const response = await fetch('/api/config');
+                const response = await fetch(`/api/config?providerId=${encodeURIComponent(providerId)}`);
                 const { configJson } = await response.json();
                 const proofRequest = await ReclaimProofRequest.fromJsonString(configJson);
 
